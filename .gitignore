@@ -1,0 +1,11 @@
+# Python
+
+bin/
+include/
+lib/
+lib64/
+pyvenv.cfg
+
+# Data
+
+data/
