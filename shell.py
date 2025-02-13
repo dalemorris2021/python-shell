@@ -3,39 +3,41 @@ import sys
 
 PROGRAM_NAME = sys.argv[0]
 MAX_FILE_DATA = 4096
+HEADER = 'XX:                1               2               3\nXX:0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF\n'
 
 class Config:
     def __init__(self, in_file):
         self.in_file = in_file
 
-def zeroPad2(s):
-    if len(s) == 1:
-        return '0' + s
-    else:
-        return s
+
+def leftPad(n: int, char: str, s: str) -> str:
+    return char * (n - len(s)) + s
+
 
 def contentsToRaw(contents: str) -> list[list[str]]:
     temp1 = contents.splitlines()[2:]
     for i in range(len(temp1)):
-        temp1[i] = temp1[i][3:len(temp1[i])-1]
+        temp1[i] = '0' + temp1[i][3:len(temp1[i])-1]
+    
+    raw = []
     for i in range(len(temp1)):
-        temp1[i] = '0' + temp1[i]
-    temp2 = []
-    for i in range(len(temp1)):
-        temp2.append([temp1[i][j:j+2] for j in range(0, len(temp1[i]), 2)])
-    return temp2
+        raw.append([temp1[i][j:j+2] for j in range(0, len(temp1[i]), 2)])
+    
+    return raw
+
 
 def rawToContents(raw: list[list[str]]) -> str:
     temp1 = []
     for i in range(len(raw)):
         temp1.append(''.join(raw[i]))
     for i in range(len(temp1)):
-        temp1[i] = temp1[i][1:]
-        temp1[i] += '0'
-        temp1[i] = zeroPad2(hex(i)[2:].upper()) + ':' + temp1[i]
-    temp2 = 'XX:                1               2               3\n' + 'XX:0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF\n'
-    temp2 += '\n'.join(temp1)
-    return temp2
+        temp1[i] = leftPad(2, '0', hex(i)[2:].upper()) + ':' + temp1[i][1:] + '0'
+    
+    contents = HEADER
+    contents += '\n'.join(temp1)
+    
+    return contents
+
 
 def run(config: Config) -> None:
     contents = config.in_file.read(MAX_FILE_DATA)
@@ -44,6 +46,7 @@ def run(config: Config) -> None:
     newContents = rawToContents(raw)
     
     print(newContents)
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(
@@ -67,6 +70,7 @@ def main() -> None:
     run(config)
     if config.in_file != sys.stdin:
         config.in_file.close()
+
 
 if __name__ == '__main__':
     main()
