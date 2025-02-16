@@ -1,6 +1,7 @@
 import argparse
 import enum
 import sys
+import typing
 
 PROGRAM_NAME = sys.argv[0]
 MAX_FILE_DATA = 4096
@@ -8,7 +9,7 @@ HEADER = '''XX:                1               2               3
 XX:0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF\n'''
 
 class Config:
-    def __init__(self, in_file):
+    def __init__(self, in_file: typing.TextIO) -> None:
         self.in_file = in_file
 
 
@@ -30,7 +31,7 @@ class RootCluster:
 
 
 class FileHeaderCluster:
-    def __init(self, type, next_file, next_data, name, data):
+    def __init__(self, type, next_file, next_data, name, data):
         self.type = type
         self.next_file = next_file
         self.next_data = next_data
@@ -50,18 +51,10 @@ def leftPad(s: str, char: str, n: int) -> str:
 
 
 def contentsToRaw(contents: str) -> list[list[int]]:
-    temp1 = contents.splitlines()[2:]
-    for i in range(len(temp1)):
-        temp1[i] = '0' + temp1[i][3:len(temp1[i])-1]
-    
-    raw = []
-    for i in range(len(temp1)):
-        raw.append([temp1[i][j:j+2] for j in range(0, len(temp1[i]), 2)])
-    
+    raw = contents.splitlines()[2:]
     for i in range(len(raw)):
-        for j in range(len(raw[0])):
-            raw[i][j] = int(raw[i][j], 16)
-    
+        raw[i] = bytes.fromhex('0' + raw[i][3:len(raw[i])-1])
+
     return raw
 
 
