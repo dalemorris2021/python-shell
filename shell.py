@@ -1,4 +1,5 @@
 import argparse
+import enum
 import sys
 
 PROGRAM_NAME = sys.argv[0]
@@ -9,6 +10,39 @@ XX:0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF\n'''
 class Config:
     def __init__(self, in_file):
         self.in_file = in_file
+
+
+class FileType(enum.Enum):
+    FOLDER = 0
+    EMPTY = 1
+    DAMAGED = 2
+    FILE_HEADER = 3
+    FILE_DATA = 4
+
+
+class RootCluster:
+    def __init__(self, type, available, bad, files, name):
+        self.type = type
+        self.available = available
+        self.bad = bad
+        self.files = files
+        self.name = name
+
+
+class FileHeaderCluster:
+    def __init(self, type, next_file, next_data, name, data):
+        self.type = type
+        self.next_file = next_file
+        self.next_data = next_data
+        self.name = name
+        self.data = data
+
+
+class FileDataCluster:
+    def __init__(self, type, next_data, data):
+        self.type = type
+        self.next_data = next_data
+        self.data = data
 
 
 def leftPad(s: str, char: str, n: int) -> str:
