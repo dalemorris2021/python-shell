@@ -1,5 +1,6 @@
 from abc import ABC
 import argparse
+from enum import Enum
 import sys
 from typing import Self, TextIO
 
@@ -11,8 +12,14 @@ BYTES = 32
 HEADER = '''XX:                1               2               3
 XX:0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF\n'''
 
+class ShellAction(Enum):
+    DISK = 0
+    DIR = 1
+
+
 class Config:
-    def __init__(self: Self, in_file: TextIO = None) -> Self:
+    def __init__(self: Self, action: ShellAction, in_file: TextIO = None) -> Self:
+        self.action = action
         self.in_file = in_file
 
 
@@ -89,7 +96,7 @@ def rawToCluster(raw: list[int]) -> Cluster:
             name = ''
             for i in range(4, BYTES):
                 b = chr(raw[i])
-                if b == 0:
+                if b == '\0':
                     break
                 else:
                     name += b
@@ -106,16 +113,17 @@ def rawToCluster(raw: list[int]) -> Cluster:
         case 3:
             name = ''
             content = ''
+            content_start = BYTES # Start at BYTES in case name spans entire row
             for i in range(3, BYTES):
                 b = chr(raw[i])
-                if b == 0:
+                if b == '\0':
                     content_start = i + 1
                     break
                 else:
                     name += b
             for i in range(content_start, BYTES):
                 b = chr(raw[i])
-                if b == 0:
+                if b == '\0':
                     break
                 else:
                     content += b
@@ -126,7 +134,7 @@ def rawToCluster(raw: list[int]) -> Cluster:
             content = ''
             for i in range(2, BYTES):
                 b = chr(raw[i])
-                if b == 0:
+                if b == '\0':
                     break
                 else:
                     content += b
@@ -144,6 +152,16 @@ def rawToClusters(raw: list[list[int]]) -> list[Cluster]:
     return clusters
 
 
+def printContents(contents: str) -> None:
+    print(contents)
+
+
+def printFiles(clusters: list[Cluster]) -> None:
+    for cluster in clusters:
+        if isinstance(cluster, FileHeaderCluster):
+            print(cluster.name)
+
+
 def run(config: Config) -> None:
     contents = config.in_file.read(MAX_FILE_DATA)
     
@@ -151,7 +169,11 @@ def run(config: Config) -> None:
     clusters = rawToClusters(raw)
     newContents = rawToContents(raw)
     
-    print(newContents)
+    match config.action:
+        case ShellAction.DISK:
+            printContents(newContents)
+        case ShellAction.DIR:
+            printFiles(clusters)
 
 
 def main() -> None:
@@ -163,6 +185,7 @@ def main() -> None:
     parser.add_argument('-h', '-H', '-?', '--help', action='help', help='show this help message and exit')
     parser.add_argument('-v', '-V', '--version', action='version', version='%(prog)s 0.1.0')
     parser.add_argument('-i', action='store', help='input file')
+    parser.add_argument('-dir', action='store_true', help='list files on disk')
     
     args = parser.parse_args()
     
@@ -170,8 +193,13 @@ def main() -> None:
         in_file = sys.stdin
     else:
         in_file = open(args.i, 'r', encoding='utf-8')
-        
-    config = Config(in_file)
+    
+    if args.dir:
+        action = ShellAction.DIR
+    else:
+        action = ShellAction.DISK
+    
+    config = Config(action, in_file)
     
     run(config)
     if config.in_file != sys.stdin:
