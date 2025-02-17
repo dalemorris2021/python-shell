@@ -1,9 +1,13 @@
+from abc import ABC
 import argparse
 import sys
 from typing import Self, TextIO
 
 PROGRAM_NAME = sys.argv[0]
 MAX_FILE_DATA = 4096
+ROWS = 32
+COLUMNS = 64
+BYTES = 32
 HEADER = '''XX:                1               2               3
 XX:0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF\n'''
 
@@ -12,32 +16,36 @@ class Config:
         self.in_file = in_file
 
 
-class EmptyCluster:
-    def __init__(self: Self, next_empty: Self = None) -> Self:
+class Cluster(ABC):
+    pass
+
+
+class EmptyCluster(Cluster):
+    def __init__(self: Self, next_empty: int) -> Self:
         self.next_empty = next_empty
 
 
-class DamagedCluster:
-    def __init__(self: Self, next_damaged: Self = None) -> Self:
+class DamagedCluster(Cluster):
+    def __init__(self: Self, next_damaged: int) -> Self:
         self.next_damaged = next_damaged
 
 
-class FileDataCluster:
-    def __init__(self: Self, content: str, next_data: Self = None):
+class FileDataCluster(Cluster):
+    def __init__(self: Self, content: str, next_data: int) -> Self:
         self.content = content
         self.next_data = next_data
 
 
-class FileHeaderCluster:
-    def __init__(self: Self, name: str, content: str, next_header: Self = None, next_data: FileDataCluster = None) -> Self:
+class FileHeaderCluster(Cluster):
+    def __init__(self: Self, name: str, content: str, next_header: int, next_data: int) -> Self:
         self.name = name
         self.content = content
         self.next_header = next_header
         self.next_data = next_data
 
 
-class RootCluster:
-    def __init__(self: Self, name: str, empty: EmptyCluster = None, damaged: DamagedCluster = None, headers: FileHeaderCluster = None) -> Self:
+class RootCluster(Cluster):
+    def __init__(self: Self, name: str, empty: int, damaged: int, headers: int) -> Self:
         self.name = name
         self.empty = empty
         self.damaged = damaged
@@ -74,13 +82,73 @@ def rawToContents(raw: list[list[int]]) -> str:
     return contents
 
 
+def rawToCluster(raw: list[int]) -> Cluster:
+    type = raw[0]
+    match type:
+        case 0:
+            name = ''
+            for i in range(4, BYTES):
+                b = chr(raw[i])
+                if b == 0:
+                    break
+                else:
+                    name += b
+            empty = chr(raw[1])
+            damaged = chr(raw[2])
+            headers = chr(raw[3])
+            cluster = RootCluster(name, empty, damaged, headers)
+        case 1:
+            next_empty = chr(raw[1])
+            cluster = EmptyCluster(next_empty)
+        case 2:
+            next_damaged = chr(raw[1])
+            cluster = DamagedCluster(next_damaged)
+        case 3:
+            name = ''
+            content = ''
+            for i in range(3, BYTES):
+                b = chr(raw[i])
+                if b == 0:
+                    content_start = i + 1
+                    break
+                else:
+                    name += b
+            for i in range(content_start, BYTES):
+                b = chr(raw[i])
+                if b == 0:
+                    break
+                else:
+                    content += b
+            next_header = chr(raw[1])
+            next_data = chr(raw[2])
+            cluster = FileHeaderCluster(name, content, next_header, next_data)
+        case 4:
+            content = ''
+            for i in range(2, BYTES):
+                b = chr(raw[i])
+                if b == 0:
+                    break
+                else:
+                    content += b
+            next_data = chr(raw[1])
+            cluster = FileDataCluster(content, next_data)
+    
+    return cluster
+
+
+def rawToClusters(raw: list[list[int]]) -> list[Cluster]:
+    clusters = []
+    for i in range(len(raw)):
+        clusters.append(rawToCluster(raw[i]))
+    
+    return clusters
+
+
 def run(config: Config) -> None:
     contents = config.in_file.read(MAX_FILE_DATA)
     
     raw = contentsToRaw(contents)
-    
-    
-    
+    clusters = rawToClusters(raw)
     newContents = rawToContents(raw)
     
     print(newContents)
