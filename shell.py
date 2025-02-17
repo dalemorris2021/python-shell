@@ -1,5 +1,4 @@
 import argparse
-import enum
 import sys
 from typing import Self, TextIO
 
@@ -9,40 +8,40 @@ HEADER = '''XX:                1               2               3
 XX:0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF\n'''
 
 class Config:
-    def __init__(self: Self, in_file: TextIO) -> Self:
+    def __init__(self: Self, in_file: TextIO = None) -> Self:
         self.in_file = in_file
 
 
 class EmptyCluster:
-    def __init__(self: Self, next_empty: Self) -> Self:
+    def __init__(self: Self, next_empty: Self = None) -> Self:
         self.next_empty = next_empty
 
 
 class DamagedCluster:
-    def __init__(self: Self, next_damaged: Self) -> Self:
+    def __init__(self: Self, next_damaged: Self = None) -> Self:
         self.next_damaged = next_damaged
 
 
 class FileDataCluster:
-    def __init__(self: Self, next_data: Self, content: str):
-        self.next_data = next_data
+    def __init__(self: Self, content: str, next_data: Self = None):
         self.content = content
+        self.next_data = next_data
 
 
 class FileHeaderCluster:
-    def __init__(self: Self, next_header: Self, next_data, name: str, content: str) -> Self:
-        self.next_header = next_header
-        self.next_data = next_data
+    def __init__(self: Self, name: str, content: str, next_header: Self = None, next_data: FileDataCluster = None) -> Self:
         self.name = name
         self.content = content
+        self.next_header = next_header
+        self.next_data = next_data
 
 
 class RootCluster:
-    def __init__(self: Self, empty: EmptyCluster, damaged: DamagedCluster, headers: FileHeaderCluster, name: str) -> Self:
+    def __init__(self: Self, name: str, empty: EmptyCluster = None, damaged: DamagedCluster = None, headers: FileHeaderCluster = None) -> Self:
+        self.name = name
         self.empty = empty
         self.damaged = damaged
         self.headers = headers
-        self.name = name
 
 
 def leftPad(s: str, char: str, n: int) -> str:
