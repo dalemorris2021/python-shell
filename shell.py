@@ -63,7 +63,7 @@ def leftPad(s: str, char: str, n: int) -> str:
     return char * (n - len(s)) + s
 
 
-def contentsToRaw(contents: str) -> list[list[int]]:
+def contentsToRaw(contents: str) -> list[list[bytes]]:
     raw = contents.splitlines()[2:]
     for i in range(len(raw)):
         raw[i] = bytes.fromhex('0' + raw[i][3:len(raw[i])-1])
@@ -71,7 +71,7 @@ def contentsToRaw(contents: str) -> list[list[int]]:
     return raw
 
 
-def rawToContents(raw: list[list[int]]) -> str:
+def rawToContents(raw: list[list[bytes]]) -> str:
     temp1 = []
     for i in range(len(raw)):
         temp1.append([])
@@ -89,7 +89,7 @@ def rawToContents(raw: list[list[int]]) -> str:
     return contents
 
 
-def rawToCluster(raw: list[int]) -> Cluster:
+def rawToCluster(raw: list[bytes]) -> Cluster:
     type = raw[0]
     match type:
         case 0:
