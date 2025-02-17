@@ -192,7 +192,11 @@ def main() -> None:
     if args.i == None:
         in_file = sys.stdin
     else:
-        in_file = open(args.i, 'r', encoding='utf-8')
+        try:
+            in_file = open(args.i, 'r', encoding='utf-8')
+        except FileNotFoundError:
+            print('File not found')
+            return
     
     if args.dir:
         action = ShellAction.DIR
