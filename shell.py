@@ -1,7 +1,7 @@
 import argparse
 import enum
 import sys
-import typing
+from typing import Self, TextIO
 
 PROGRAM_NAME = sys.argv[0]
 MAX_FILE_DATA = 4096
@@ -9,41 +9,40 @@ HEADER = '''XX:                1               2               3
 XX:0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF\n'''
 
 class Config:
-    def __init__(self, in_file: typing.TextIO) -> None:
+    def __init__(self: Self, in_file: TextIO) -> Self:
         self.in_file = in_file
 
 
-class FileType(enum.Enum):
-    FOLDER = 0
-    EMPTY = 1
-    DAMAGED = 2
-    FILE_HEADER = 3
-    FILE_DATA = 4
+class EmptyCluster:
+    def __init__(self: Self, next_empty: Self) -> Self:
+        self.next_empty = next_empty
 
 
-class RootCluster:
-    def __init__(self, type, available, bad, files, name):
-        self.type = type
-        self.available = available
-        self.bad = bad
-        self.files = files
-        self.name = name
-
-
-class FileHeaderCluster:
-    def __init__(self, type, next_file, next_data, name, data):
-        self.type = type
-        self.next_file = next_file
-        self.next_data = next_data
-        self.name = name
-        self.data = data
+class DamagedCluster:
+    def __init__(self: Self, next_damaged: Self) -> Self:
+        self.next_damaged = next_damaged
 
 
 class FileDataCluster:
-    def __init__(self, type, next_data, data):
-        self.type = type
+    def __init__(self: Self, next_data: Self, content: str):
         self.next_data = next_data
-        self.data = data
+        self.content = content
+
+
+class FileHeaderCluster:
+    def __init__(self, next_file, next_data, name: str, content: str) -> Self:
+        self.next_file = next_file
+        self.next_data = next_data
+        self.name = name
+        self.content = content
+
+
+class RootCluster:
+    def __init__(self, empty: EmptyCluster, damaged: DamagedCluster, headers: FileHeaderCluster, name: str) -> Self:
+        self.empty = empty
+        self.damaged = damaged
+        self.headers = headers
+        self.name = name
 
 
 def leftPad(s: str, char: str, n: int) -> str:
@@ -80,6 +79,9 @@ def run(config: Config) -> None:
     contents = config.in_file.read(MAX_FILE_DATA)
     
     raw = contentsToRaw(contents)
+    
+    
+    
     newContents = rawToContents(raw)
     
     print(newContents)
