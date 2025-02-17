@@ -30,15 +30,15 @@ class FileDataCluster:
 
 
 class FileHeaderCluster:
-    def __init__(self, next_file, next_data, name: str, content: str) -> Self:
-        self.next_file = next_file
+    def __init__(self: Self, next_header: Self, next_data, name: str, content: str) -> Self:
+        self.next_header = next_header
         self.next_data = next_data
         self.name = name
         self.content = content
 
 
 class RootCluster:
-    def __init__(self, empty: EmptyCluster, damaged: DamagedCluster, headers: FileHeaderCluster, name: str) -> Self:
+    def __init__(self: Self, empty: EmptyCluster, damaged: DamagedCluster, headers: FileHeaderCluster, name: str) -> Self:
         self.empty = empty
         self.damaged = damaged
         self.headers = headers
